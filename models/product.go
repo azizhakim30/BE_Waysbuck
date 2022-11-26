@@ -8,8 +8,8 @@ type Product struct {
 	Price    int           `json:"price" form:"price" gorm:"type: int"`
 	Image    string        `json:"image" form:"image" gorm:"type: varchar(255)"`
 	Qty			 int					 `json:"qty" form:"qty" gorm:"type: varchar(255)"`
-	UserID   int           `json:"user_id" gorm:"user_id"`
-	User     UserResponse `json:"user"`
+	UserID   int           `json:"-" gorm:"user_id"`
+	User     UserResponse  `json:"-"`
 	CreateAt time.Time		 `json:"-"`
 	UpdateAt time.Time		 `json:"-"`
 }
@@ -21,8 +21,8 @@ type ProductResponse struct {
 	Image    string        			`json:"image"`
 	Qty			 int					 			`json:"qty"`
 	UserID   int           			`json:"-"`
-	User     UserResponse 			`json:"user" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Topping  []ToppingResponse 	`json:"topping"`
+	User     UserResponse 			`json:"-" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	// Topping  []ToppingResponse 	`json:"topping"`
 	CreateAt time.Time		 			`json:"-"`
 	UpdateAt time.Time		 			`json:"-"`
 }
