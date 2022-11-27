@@ -31,7 +31,7 @@ func (h *handlerUser) FindUsers(w http.ResponseWriter, r *http.Request) {
 
 	if userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -58,7 +58,7 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -97,7 +97,7 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -159,7 +159,7 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
