@@ -1,13 +1,15 @@
 package models
 
+import "time"
+
 type Topping struct {
-	ID     int          `json:"id"`
-	Title  string       `json:"title" form:"title" gorm:"type: varchar(255)"`
-	Price  int          `json:"price" form:"price" gorm:"type: varchar(255)"`
-	Image  string       `json:"image" form:"image" gorm:"type: varchar(255)"`
-	Qty    int          `json:"qty" form:"qty"`
-	UserID int          `json:"user_id"`
-	User   UserResponse `json:"user"`
+	ID       int          `json:"id"`
+	Title    string       `json:"title" form:"title" gorm:"type: varchar(255)"`
+	Price    int          `json:"price" form:"price" gorm:"type: varchar(255)"`
+	Image    string       `json:"image" form:"image" gorm:"type: varchar(255)"`
+	Qty      int          `json:"qty" form:"qty"`
+	CreateAt time.Time    `json:"-"`
+	UpdateAt time.Time    `json:"-"`
 }
 
 type ToppingResponse struct {
@@ -16,7 +18,11 @@ type ToppingResponse struct {
 	Price  int    `json:"price"`
 	Image  string `json:"image"`
 	Qty    int    `json:"qty"`
-	UserID int    `json:"-"`
+}
+
+type ToppingOrder struct {
+	ID     int    `json:"id"`
+	Title  string `json:"title"`
 }
 
 func (ToppingResponse) TableName() string {
