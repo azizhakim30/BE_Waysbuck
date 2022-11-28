@@ -3,7 +3,7 @@ package models
 import "time"
 
 type User struct{
-	ID 				int 			`json:"id"`
+	ID 				int 			`json:"id" gorm:"primary_key: auto_increment"`
 	Fullname 	string 		`json:"fullname" gorm:"type: varchar(255)"`
 	Password 	string 		`json:"-" gorm:"type: varchar(255)"`
 	Email			string 		`json:"email" gorm:"type: varchar(255)"`
@@ -17,8 +17,8 @@ type UserResponse struct {
 	ID 				int 	 `json:"id"`
 	Fullname 	string `json:"fullname"`
 	Email			string `json:"email"`
-	Image			string `json:"image"`
-	Role			string `json:"role"`
+	Image			string `json:"-"`
+	Role			string `json:"-"`
 }
 
 func (UserResponse) TableName() string {

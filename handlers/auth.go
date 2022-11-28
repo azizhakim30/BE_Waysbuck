@@ -107,7 +107,7 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.AuthRepository.Login(user.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "Wrong email"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
