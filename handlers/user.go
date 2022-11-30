@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 	authdto "waysbuck/dto/auth"
@@ -31,7 +32,7 @@ func (h *handlerUser) FindUsers(w http.ResponseWriter, r *http.Request) {
 
 	if userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -40,6 +41,10 @@ func (h *handlerUser) FindUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(err.Error())
+	}
+
+	for i, p := range users {
+		users[i].Image = os.Getenv("PATH_FILE") + p.Image
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -58,19 +63,21 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	
-	user, err := h.UserRepository.GetUser(id)
+	user, err := h.UserRepository.GetUserByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	user.Image = os.Getenv("PATH_FILE") + user.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: user}
@@ -97,7 +104,7 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -110,7 +117,7 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 
-	user, err := h.UserRepository.GetUser(int(id))
+	user, err := h.UserRepository.GetUserByID(int(id))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -143,6 +150,8 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data.Image = os.Getenv("PATH_FILE") + data.Image
+	
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: data}
 	json.NewEncoder(w).Encode(response)
@@ -159,12 +168,12 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	if userID != id && userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
-		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "not an admin"}
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	user, err := h.UserRepository.GetUser(id)
+	user, err := h.UserRepository.GetUserByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}

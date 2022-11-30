@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 	productdto "waysbuck/dto/product"
 	dto "waysbuck/dto/result"
 	"waysbuck/models"
@@ -41,7 +42,7 @@ func (h *handlerProduct) FindProducts(w http.ResponseWriter, r *http.Request) {
 	for i, p := range products {
 		products[i].Image = os.Getenv("PATH_FILE") + p.Image
 	  }
-
+		
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: products}
 	json.NewEncoder(w).Encode(response)
@@ -52,8 +53,8 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	var product models.Product
-	product, err := h.ProductRepository.GetProduct(id)
+	
+	_, err := h.ProductRepository.GetProduct(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -62,19 +63,33 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create Embed Path File on Image property here ...
-	product.Image = os.Getenv("PATH_FILE") + product.Image
-
+	
+	products, err := h.ProductRepository.GetProduct(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	
+	products.Image = os.Getenv("PATH_FILE") + products.Image
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: "success", Data: convertResponseProduct(product)}
+	response := dto.SuccessResult{Code: "success", Data: products}
 	json.NewEncoder(w).Encode(response)
 }
 
 func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// get data user token
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
-	userId := int(userInfo["id"].(float64))
+	userRole := userInfo["role"]
+
+	if userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	// Get dataFile from midleware and store to filename variable here ...
 	dataContex := r.Context().Value("dataFile") // add this code
@@ -102,7 +117,8 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		Price:  request.Price,
 		Image:  filename,
 		Qty:    request.Qty,
-		UserID: userId,
+		CreateAt: time.Now(),
+		UpdateAt: time.Now(),
 	}
 
 	product, err = h.ProductRepository.CreateProduct(product)
@@ -115,18 +131,128 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	product, _ = h.ProductRepository.GetProduct(product.ID)
 
+	product.Image = os.Getenv("PATH_FILE") + product.Image
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: product}
 	json.NewEncoder(w).Encode(response)
 }
 
-func convertResponseProduct(u models.Product) models.ProductResponse {
-	return models.ProductResponse{
-		Title:    u.Title,
-		Price:    u.Price,
-		Image:    u.Image,
-		Qty:      u.Qty,
-		User:     u.User,
-		
+func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+	
+	if userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	
+	dataContex := r.Context().Value("dataFile") // add this code
+	filename := dataContex.(string) // add this code
+
+	price, _ := strconv.Atoi(r.FormValue("price"))
+	qty, _ := strconv.Atoi(r.FormValue("qty"))
+	request := productdto.UpdateProduct{
+		Title:       r.FormValue("title"),
+		Price:      price,
+		Qty:        qty,
+	}
+
+	validation := validator.New()
+	err := validation.Struct(request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	product, _ := h.ProductRepository.GetProduct(id)
+
+	// product.Title = request.Title
+	// product.Price = request.Price
+	// product.Qty = request.Qty
+	
+	if request.Title != "" {
+		product.Title = request.Title
+	}
+
+	if request.Price != 0 {
+		product.Price = request.Price
+	}
+
+	if request.Qty != 0 {
+		product.Qty = request.Qty
+	}
+	
+	if filename != "false" {
+		product.Image = filename
+	}
+
+	product.UpdateAt = time.Now()
+
+	product, err = h.ProductRepository.UpdateProduct(product)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	product.Image = os.Getenv("PATH_FILE") + product.Image
+
+	w.WriteHeader(http.StatusOK)
+	response := dto.SuccessResult{Code: "success", Data: product}
+	json.NewEncoder(w).Encode(response)	
+}
+
+func (h *handlerProduct) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+
+
+	if userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	product, err := h.ProductRepository.GetProduct(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	_, err = h.ProductRepository.DeleteProduct(product)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	data := models.Product{
+		ID: product.ID,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := dto.SuccessResult{Code: "success", Data: convertResponseProduct(data)}
+	json.NewEncoder(w).Encode(response)
+}
+
+func convertResponseProduct(u models.Product) productdto.DeleteResponse {
+	return productdto.DeleteResponse{
+		ID: 			u.ID,
 	}
 }
