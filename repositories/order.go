@@ -12,8 +12,11 @@ type OrderRepository interface {
 	FindOrders() ([]models.Order, error)
 	DeleteOrder(order models.Order) (models.Order, error)
 	UpdateOrder(order models.Order) (models.Order, error)
+	GetTransactionID(ID int) (models.Transaction, error)
 	GetProductOrder(ID int) (models.Product, error)
 	GetToppingOrder(ID []int) ([]models.Topping, error)
+	GetOrdersByID(TransactionID int) ([]models.Order, error)
+	GetUserID(ID int) (models.User, error)
 }
 
 func RepositoryOrder(db *gorm.DB) *repository {
@@ -27,24 +30,30 @@ func (r *repository) AddOrder(order models.Order) (models.Order, error) {
 
 func (r *repository) GetOrder(ID int) (models.Order, error) {
 	var order models.Order
-	err := r.db.Preload("Product").Preload("Topping").Preload("Buyyer").First(&order, ID).Error
+	err := r.db.Preload("Product").Preload("Topping").First(&order, ID).Error
 	return order, err
 }
 
 func (r *repository) FindOrders() ([]models.Order, error) {
 	var orders []models.Order
-	err := r.db.Preload("Product").Preload("Topping").Preload("Buyyer").Find(&orders).Error
+	err := r.db.Preload("Product").Preload("Topping").Find(&orders).Error
 	return orders, err
 }
 
 func (r *repository) DeleteOrder(order models.Order) (models.Order, error) {
-	err := r.db.Delete(&order).Error
+	err := r.db.Preload("Product").Preload("Topping").Delete(&order).Error
 	return order, err
 }
 
 func (r *repository) UpdateOrder(order models.Order) (models.Order, error){
-	err := r.db.Save(&order).Error
+	err := r.db.Preload("Product").Preload("Topping").Save(&order).Error
 	return order, err
+}
+
+func (r *repository) GetTransactionID(ID int)(models.Transaction, error) {
+	var transaction models.Transaction
+	err := r.db.Preload("User").Preload("Order").Preload("Order.Product").Preload("Order.Topping").Find(&transaction, "status = ? AND user_id = ?", "waiting", ID).Error
+	return transaction, err
 }
 
 func (r *repository) GetProductOrder(ID int) (models.Product, error) {
@@ -57,4 +66,17 @@ func (r *repository) GetToppingOrder(ID []int) ([]models.Topping, error){
 	var topping []models.Topping
 	err := r.db.Find(&topping, ID).Error
 	return topping, err
+}
+
+func (r *repository) GetOrdersByID(TransactionID int) ([]models.Order, error) {
+	var order []models.Order
+	err := r.db.Preload("Product").Preload("Topping").Find(&order,"transaction_id = ?", TransactionID ).Error
+	return order, err
+}
+
+func (r *repository) GetUserID(ID int) (models.User, error) {
+	var user models.User
+	err := r.db.First(&user, ID).Error
+
+	return user, err
 }

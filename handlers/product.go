@@ -42,7 +42,7 @@ func (h *handlerProduct) FindProducts(w http.ResponseWriter, r *http.Request) {
 	for i, p := range products {
 		products[i].Image = os.Getenv("PATH_FILE") + p.Image
 	  }
-
+		
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: products}
 	json.NewEncoder(w).Encode(response)
@@ -53,8 +53,8 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	var product models.Product
-	product, err := h.ProductRepository.GetProduct(id)
+	
+	_, err := h.ProductRepository.GetProduct(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -63,8 +63,7 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create Embed Path File on Image property here ...
-	product.Image = os.Getenv("PATH_FILE") + product.Image
-
+	
 	products, err := h.ProductRepository.GetProduct(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -72,7 +71,8 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-
+	
+	products.Image = os.Getenv("PATH_FILE") + products.Image
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: products}
 	json.NewEncoder(w).Encode(response)
@@ -131,6 +131,8 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	product, _ = h.ProductRepository.GetProduct(product.ID)
 
+	product.Image = os.Getenv("PATH_FILE") + product.Image
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: product}
 	json.NewEncoder(w).Encode(response)
@@ -143,9 +145,8 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
 	userRole := userInfo["role"]
-	userID := int(userInfo["id"].(float64))
-
-	if userID != id && userRole != "admin" {
+	
+	if userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
 		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
@@ -202,6 +203,8 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	product.Image = os.Getenv("PATH_FILE") + product.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: product}

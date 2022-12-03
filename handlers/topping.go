@@ -53,18 +53,14 @@ func (h *handlerTopping) GetTopping(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	var topping models.Topping
-	topping, err := h.ToppingRepository.GetTopping(id)
+	_, err := h.ToppingRepository.GetTopping(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-
-	// Create Embed Path File on Image property here ...
-	topping.Image = os.Getenv("PATH_FILE") + topping.Image
-
+	
 	toppings, err := h.ToppingRepository.GetTopping(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -72,7 +68,8 @@ func (h *handlerTopping) GetTopping(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-
+	
+	toppings.Image = os.Getenv("PATH_FILE") + toppings.Image
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: toppings}
 	json.NewEncoder(w).Encode(response)
@@ -133,6 +130,8 @@ func (h *handlerTopping) CreateTopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	topping, _ = h.ToppingRepository.GetTopping(topping.ID)
+
+	topping.Image = os.Getenv("PATH_FILE") + topping.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: topping}
@@ -204,6 +203,8 @@ func (h *handlerTopping) UpdateTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	topping.Image = os.Getenv("PATH_FILE") + topping.Image
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: "success", Data: topping}
 	json.NewEncoder(w).Encode(response)	
@@ -240,17 +241,19 @@ func (h *handlerTopping) DeleteTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := models.Topping{
-		ID: topping.ID,
-	}
+	data := topping.ID
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Code: "success", Data: convertResponseTopping(data)}
+	response := dto.SuccessResult{Code: "success", Data: data}
 	json.NewEncoder(w).Encode(response)
 }
 
-func convertResponseTopping(u models.Topping) toppingdto.DeleteResponse {
-	return toppingdto.DeleteResponse{
-		ID: 			u.ID,
-	}
-}
+// func convertResponseTopping(u models.Topping) toppingdto.ToppingResponse {
+// 	return toppingdto.ToppingResponse{
+// 		ID: 			u.ID,
+// 		Title: u.Title,
+// 		Price: u.Price,
+// 		Image: u.Image,
+// 		Qty: u.Qty,
+// 	}
+// }

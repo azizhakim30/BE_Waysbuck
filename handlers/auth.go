@@ -60,6 +60,15 @@ func (h *handlerAuth) Register(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
   }
 
+	emailUser, _ := h.AuthRepository.Login(request.Email)
+
+	if emailUser.Email == request.Email {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "E-mail already registered"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
   user := models.User{
     Fullname: request.Fullname,
     Email:    request.Email,
@@ -107,7 +116,7 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.AuthRepository.Login(user.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "Wrong email"}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -136,8 +145,10 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	loginResponse := authdto.LoginResponse{
+		ID: user.ID,
 		Fullname:    user.Fullname,
 		Email:    user.Email,
+		Role: user.Role,
 		Token:    token,
 	}
 
@@ -145,4 +156,30 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	response := dto.SuccessResult{Code: "success", Data: loginResponse}
 	json.NewEncoder(w).Encode(response)
 
+}
+
+func (h *handlerAuth) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userID := int(userInfo["id"].(float64))
+
+	user, err := h.AuthRepository.GetUser(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	CheckAuthResponse := authdto.CheckAuthResponse{
+		Id:       user.ID,
+		Fullname: user.Fullname,
+		Email:    user.Email,
+		Role:   	user.Role,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := dto.SuccessResult{Code: "success", Data: CheckAuthResponse}
+	json.NewEncoder(w).Encode(response)
 }

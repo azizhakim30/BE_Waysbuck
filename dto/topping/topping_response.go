@@ -7,7 +7,3 @@ type ToppingResponse struct {
 	Image string `json:"image" gorm:"type: varchar(255)"`
 	Qty   int    `json:"qty" form:"qty" gorm:"type: int"`
 }
-
-type DeleteResponse struct {
-	ID int `json:"id"`
-}
